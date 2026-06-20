@@ -2,20 +2,21 @@
   "name": "Siber Dedektif Quiz",
   "short_name": "SiberQuiz",
   "description": "Siberay Siber Güvenlik Bilgi Yarışması – 5-18 yaş",
-  "start_url": "/",
+  "start_url": "/siberay-quiz/",
+  "scope": "/siberay-quiz/",
   "display": "standalone",
   "background_color": "#0A0E1A",
   "theme_color": "#0A0E1A",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "icon-192.png",
+      "src": "/siberay-quiz/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "icon-512.png",
+      "src": "/siberay-quiz/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
