@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0A0E1A" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Siber Dedektif Quiz | Siberay</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    /* =============================================
+       RESET & TEMA
+    ============================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg:       #0A0E1A;
+      --bg2:      #0F1629;
+      --bg3:      #152035;
+      --neon:     #00FF88;
+      --cyber:    #00BFFF;
+      --purple:   #7B2FFF;
+      --gold:     #FFD700;
+      --danger:   #FF003C;
+      --warn:     #FF8C00;
+      --text:     #C8D8E8;
+      --dim:      #4A5A7A;
+      --border:   #1E2D4A;
+
+      /* Yaş grubu renkleri */
+      --age-5:    #FF6B9D;   /* 5-8: Pembe/Şeker */
+      --age-9:    #FF8C00;   /* 9-12: Turuncu/Enerji */
+      --age-13:   #00BFFF;  /* 13-15: Mavi/Cyber */
+      --age-16:   #7B2FFF;  /* 16-18: Mor/Pro */
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    /* =============================================
+       EKRANLAR SİSTEMİ
+       Tek seferde bir ekran görünür
+    ============================================= */
+    .screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: env(safe-area-inset-top, 16px) 16px env(safe-area-inset-bottom, 24px);
+      overflow-y: auto;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(20px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 1;
+    }
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateY(0);
+      z-index: 2;
+    }
+
+    /* =============================================
+       MATRIX CANVAS (arka plan)
+    ============================================= */
+    #matrix-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      opacity: 0.06;
+      pointer-events: none;
+    }
+
+    /* =============================================
+       ORTAK BİLEŞENLER
+    ============================================= */
+    .logo {
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: var(--dim);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      margin-top: 16px;
+    }
+    .logo span { color: var(--neon); }
+
+    .page-icon {
+      font-size: 72px;
+      line-height: 1;
+      margin: 16px 0 12px;
+      filter: drop-shadow(0 0 20px currentColor);
+    }
+
+    .page-title {
+      font-size: clamp(24px, 7vw, 36px);
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+
+    .page-sub {
+      font-size: 13px;
+      color: var(--dim);
+      text-align: center;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    /* Büyük dokunmatik buton */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      max-width: 380px;
+      min-height: 58px;
+      padding: 0 20px;
+      border-radius: 16px;
+      border: 2px solid transparent;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.2s;
+      font-family: inherit;
+      text-align: center;
+    }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-neon {
+      background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,255,136,0.05));
+      border-color: var(--neon);
+      color: var(--neon);
+      box-shadow: 0 0 20px rgba(0,255,136,0.2);
+    }
+    .btn-neon:active { box-shadow: 0 0 8px rgba(0,255,136,0.4); }
+
+    .btn-solid {
+      background: var(--neon);
+      border-color: var(--neon);
+      color: #000;
+      box-shadow: 0 4px 20px rgba(0,255,136,0.35);
+    }
+
+    .btn-ghost {
+      background: var(--bg2);
+      border-color: var(--border);
+      color: var(--dim);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, rgba(255,0,60,0.15), rgba(255,0,60,0.05));
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 14px;
+    }
+
+    /* =============================================
+       EKRAN 1: KARŞILAMA
+    ============================================= */
+    #screen-welcome {
+      justify-content: center;
+      gap: 0;
+    }
+
+    .welcome-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--neon), var(--cyber));
+      color: #000;
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    #screen-welcome .page-title {
+      color: #fff;
+      font-size: clamp(28px, 8vw, 42px);
+      margin-bottom: 4px;
+    }
+    #screen-welcome .page-title span { color: var(--neon); }
+
+    .welcome-stats {
+      display: flex;
+      gap: 12px;
+      margin: 20px 0 32px;
+      width: 100%;
+      max-width: 380px;
+    }
+    .stat-box {
+      flex: 1;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 8px;
+      text-align: center;
+    }
+    .stat-num { font-size: 22px; font-weight: 900; color: var(--neon); }
+    .stat-lbl { font-size: 10px; color: var(--dim); letter-spacing: 1px; margin-top: 2px; }
+
+    /* =============================================
+       EKRAN 2: YAŞ SEÇİMİ
+    ============================================= */
+    #screen-age { justify-content: flex-start; padding-top: 32px; }
+
+    .age-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 24px;
+    }
+
+    .age-card {
+      background: var(--bg2);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 20px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.1s;
+      min-height: 120px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .age-card:active { transform: scale(0.96); }
+
+    .age-card.selected {
+      border-color: var(--active-color, var(--neon));
+      box-shadow: 0 0 20px var(--active-glow, rgba(0,255,136,0.3));
+    }
+
+    .age-emoji { font-size: 36px; line-height: 1; }
+    .age-range {
+      font-size: 17px;
+      font-weight: 900;
+      color: #fff;
+    }
+    .age-label {
+      font-size: 11px;
+      color: var(--dim);
+      line-height: 1.3;
+    }
+
+    /* Yaş kartı renkleri */
+    .age-card[data-group="5-8"]  { --active-color: var(--age-5);  --active-glow: rgba(255,107,157,0.3); }
+    .age-card[data-group="9-12"] { --active-color: var(--age-9);  --active-glow: rgba(255,140,0,0.3); }
+    .age-card[data-group="13-15"]{ --active-color: var(--age-13); --active-glow: rgba(0,191,255,0.3); }
+    .age-card[data-group="16-18"]{ --active-color: var(--age-16); --active-glow: rgba(123,47,255,0.3); }
+
+    .age-card[data-group="5-8"].selected  .age-range { color: var(--age-5); }
+    .age-card[data-group="9-12"].selected .age-range { color: var(--age-9); }
+    .age-card[data-group="13-15"].selected .age-range{ color: var(--age-13); }
+    .age-card[data-group="16-18"].selected .age-range{ color: var(--age-16); }
+
+    /* =============================================
+       EKRAN 3: QUIZ (Soru)
+    ============================================= */
+    #screen-quiz {
+      justify-content: flex-start;
+      padding-top: 16px;
+    }
+
+    /* Üst bar: geri + skor + süre */
+    .quiz-topbar {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .quit-btn {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      color: var(--dim);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-family: inherit;
+    }
+
+    .score-pill {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* Süre çubuğu */
+    .timer-bar-wrap {
+      flex: 1;
+      background: var(--bg3);
+      border-radius: 6px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .timer-bar {
+      height: 100%;
+      border-radius: 6px;
+      background: var(--neon);
+      transition: width 1s linear, background 0.5s;
+    }
+    .timer-bar.warn { background: var(--warn); }
+    .timer-bar.danger { background: var(--danger); }
+
+    /* İlerleme */
+    .progress-row {
+      width: 100%; max-width: 420px;
+      display: flex; gap: 5px;
+      margin-bottom: 16px;
+    }
+    .progress-dot {
+      flex: 1; height: 4px; border-radius: 3px;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+    .progress-dot.done   { background: var(--neon); }
+    .progress-dot.active { background: var(--cyber); }
+    .progress-dot.wrong  { background: var(--danger); }
+
+    /* Soru kartı */
+    .question-card {
+      width: 100%; max-width: 420px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+
+    .q-meta {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .q-num {
+      font-size: 11px; color: var(--dim);
+      letter-spacing: 2px; text-transform: uppercase;
+    }
+    .q-cat {
+      font-size: 10px;
+      background: rgba(0,191,255,0.1);
+      border: 1px solid rgba(0,191,255,0.3);
+      color: var(--cyber);
+      padding: 2px 8px; border-radius: 4px;
+      letter-spacing: 1px;
+    }
+    .q-diff {
+      margin-left: auto;
+      font-size: 12px;
+    }
+
+    .q-text {
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.5;
+      color: #fff;
+    }
+
+    /* Şıklar */
+    .options-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 12px;
+    }
+
+    .option-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      min-height: 58px;
+      padding: 14px 16px;
+      background: var(--bg2);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, transform 0.1s;
+      line-height: 1.4;
+    }
+    .option-btn:active:not(:disabled) { transform: scale(0.98); }
+    .option-btn:disabled { cursor: default; }
+
+    .option-letter {
+      min-width: 30px; height: 30px;
+      border-radius: 8px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 800;
+      color: var(--dim);
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    /* Doğru / Yanlış durumları */
+    .option-btn.correct {
+      border-color: var(--neon);
+      background: rgba(0,255,136,0.08);
+    }
+    .option-btn.correct .option-letter {
+      background: var(--neon);
+      color: #000;
+      border-color: var(--neon);
+    }
+
+    .option-btn.wrong {
+      border-color: var(--danger);
+      background: rgba(255,0,60,0.08);
+    }
+    .option-btn.wrong .option-letter {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+
+    .option-btn.dimmed {
+      opacity: 0.4;
+    }
+
+    /* Açıklama kutusu */
+    .explanation-box {
+      width: 100%; max-width: 420px;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .explanation-box.correct {
+      background: rgba(0,255,136,0.06);
+      border: 1px solid rgba(0,255,136,0.3);
+      color: #8AFFC8;
+      display: block;
+    }
+    .explanation-box.wrong {
+      background: rgba(255,0,60,0.06);
+      border: 1px solid rgba(255,0,60,0.3);
+      color: #FFB0B0;
+      display: block;
+    }
+
+    /* Süre göstergesi */
+    .timer-display {
+      font-size: 13px;
+      color: var(--dim);
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .timer-display span { color: var(--neon); font-weight: 700; font-size: 16px; }
+
+    /* =============================================
+       EKRAN 4: SONUÇ
+    ============================================= */
+    #screen-result { justify-content: flex-start; padding-top: 24px; }
+
+    .result-hero {
+      width: 100%; max-width: 420px;
+      border-radius: 24px;
+      padding: 28px 24px;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+
+    .result-emoji { font-size: 72px; display: block; margin-bottom: 12px;
+      animation: bounce 1s ease-in-out infinite alternate; }
+    @keyframes bounce { 0%{transform:translateY(0)} 100%{transform:translateY(-8px)} }
+
+    .result-title {
+      font-size: 26px; font-weight: 900; color: #fff; margin-bottom: 6px;
+    }
+    .result-sub { font-size: 14px; color: var(--dim); margin-bottom: 20px; }
+
+    .score-display {
+      font-size: 52px; font-weight: 900;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .score-max { font-size: 16px; color: var(--dim); }
+
+    .result-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%; max-width: 420px;
+      margin-bottom: 16px;
+    }
+    .rstat {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 8px;
+      text-align: center;
+    }
+    .rstat-num { font-size: 22px; font-weight: 900; color: var(--neon); }
+    .rstat-lbl { font-size: 10px; color: var(--dim); letter-spacing: 1px; margin-top: 3px; }
+
+    /* Rozet */
+    .badge-earned {
+      width: 100%; max-width: 420px;
+      background: linear-gradient(135deg, rgba(123,47,255,0.1), rgba(0,191,255,0.1));
+      border: 1px solid var(--purple);
+      border-radius: 16px;
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 16px;
+    }
+    .badge-icon-big { font-size: 44px; flex-shrink: 0; }
+    .badge-info {}
+    .badge-title { font-size: 15px; font-weight: 800; color: #fff; margin-bottom: 2px; }
+    .badge-desc  { font-size: 12px; color: var(--dim); line-height: 1.4; }
+
+    /* Skor tablosu */
+    .leaderboard {
+      width: 100%; max-width: 420px;
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 16px;
+    }
+    .lb-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .lb-row {
+      display: flex; align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .lb-row:last-child { border-bottom: none; }
+    .lb-row.current { background: rgba(0,255,136,0.05); }
+    .lb-rank { font-size: 14px; font-weight: 900; color: var(--dim); min-width: 24px; }
+    .lb-rank.gold   { color: #FFD700; }
+    .lb-rank.silver { color: #C0C0C0; }
+    .lb-rank.bronze { color: #CD7F32; }
+    .lb-name { flex: 1; font-size: 14px; font-weight: 600; color: var(--text); }
+    .lb-score { font-size: 14px; font-weight: 800; color: var(--neon); }
+    .lb-group { font-size: 10px; color: var(--dim); }
+
+    .result-btns {
+      display: flex; flex-direction: column; gap: 10px;
+      width: 100%; max-width: 420px;
+      margin-bottom: 24px;
+    }
+
+    /* =============================================
+       İSİM GİRİŞ MODALI
+    ============================================= */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal-sheet {
+      width: 100%;
+      background: var(--bg2);
+      border-radius: 24px 24px 0 0;
+      border-top: 1px solid var(--border);
+      padding: 24px 20px 40px;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
+
+    .modal-handle {
+      width: 40px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 0 auto 20px;
+    }
+    .modal-title {
+      font-size: 20px; font-weight: 900; color: #fff;
+      text-align: center; margin-bottom: 6px;
+    }
+    .modal-sub {
+      font-size: 13px; color: var(--dim);
+      text-align: center; margin-bottom: 24px;
+    }
+
+    .name-input {
+      width: 100%;
+      background: var(--bg3);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 18px;
+      color: var(--neon);
+      font-family: inherit;
+      font-size: 18px;
+      font-weight: 700;
+      outline: none;
+      text-align: center;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+    .name-input:focus { border-color: var(--neon); }
+    .name-input::placeholder { color: var(--dim); font-weight: 400; letter-spacing: 0; }
+
+    /* =============================================
+       KONFETTI (sonuç ekranı)
+    ============================================= */
+    #confetti-canvas {
+      position: fixed; inset: 0;
+      z-index: 50; pointer-events: none;
+    }
+
+    /* =============================================
+       SCROLL HELPER
+    ============================================= */
+    .spacer { min-height: 32px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<!-- Matrix arka plan -->
+<canvas id="matrix-bg"></canvas>
+<!-- Konfetti -->
+<canvas id="confetti-canvas" style="display:none"></canvas>
+
+<!-- =============================================
+     EKRAN 1: KARŞILAMA
+============================================= -->
+<div class="screen active" id="screen-welcome">
+  <div class="logo">🛡️ <span>SİBERAY</span> – Siber Güvenlik ve Teknoloji Kulübü</div>
+
+  <div class="page-icon" style="color:var(--neon)">🔐</div>
+
+  <div class="welcome-badge">Bilgi Yarışması v1.0</div>
+
+  <h1 class="page-title">SİBER<br><span>DEDEKTİF</span><br>QUIZ</h1>
+  <p class="page-sub">Siber güvenlik bilgini test et,<br>skor tablosunda yerini al!</p>
+
+  <div class="welcome-stats">
+    <div class="stat-box">
+      <div class="stat-num">10</div>
+      <div class="stat-lbl">SORU</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">20s</div>
+      <div class="stat-lbl">SÜRE</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num">4</div>
+      <div class="stat-lbl">YAŞ GRUBU</div>
+    </div>
+  </div>
+
+  <button class="btn btn-solid" onclick="showScreen('screen-age')" style="margin-bottom:12px">
+    🚀 OYUNA BAŞLA
+  </button>
+  <button class="btn btn-ghost" onclick="showScreen('screen-leaderboard-only')">
+    🏆 Skor Tablosu
+  </button>
+  <div class="spacer"></div>
+</div>
+
+<!-- =============================================
+     EKRAN 2: YAŞ SEÇİMİ
+============================================= -->
+<div class="screen" id="screen-age">
+  <div style="width:100%;max-width:420px;display:flex;align-items:center;gap:10px;margin-bottom:20px;margin-top:16px">
+    <button class="quit-btn" onclick="showScreen('screen-welcome')">←</button>
+    <span style="font-size:13px;color:var(--dim)">Yaş Grubu Seç</span>
+  </div>
+
+  <div class="page-icon" style="color:var(--cyber);font-size:56px;margin-top:0">🎯</div>
+  <h2 class="page-title" style="color:#fff;margin-bottom:6px">Kaç yaşındasın?</h2>
+  <p class="page-sub">Soruların zorluğu yaş grubuna göre ayarlanacak</p>
+
+  <div class="age-grid">
+    <div class="age-card" data-group="5-8" onclick="selectAge(this)">
+      <div class="age-emoji">🐣</div>
+      <div class="age-range">5 – 8</div>
+      <div class="age-label">Küçük<br>Dedektif</div>
+    </div>
+    <div class="age-card" data-group="9-12" onclick="selectAge(this)">
+      <div class="age-emoji">🦊</div>
+      <div class="age-range">9 – 12</div>
+      <div class="age-label">Genç<br>Ajan</div>
+    </div>
+    <div class="age-card" data-group="13-15" onclick="selectAge(this)">
+      <div class="age-emoji">🦅</div>
+      <div class="age-range">13 – 15</div>
+      <div class="age-label">Siber<br>Kaşif</div>
+    </div>
+    <div class="age-card" data-group="16-18" onclick="selectAge(this)">
+      <div class="age-emoji">🐉</div>
+      <div class="age-range">16 – 18</div>
+      <div class="age-label">Pro<br>Hacker</div>
+    </div>
+  </div>
+
+  <button class="btn btn-solid" id="start-btn" onclick="startGame()" style="opacity:0.4;pointer-events:none">
+    ▶ DEVAM ET
+  </button>
+  <div class="spacer"></div>
+</div>
+
+<!-- =============================================
+     EKRAN 3: QUIZ
+============================================= -->
+<div class="screen" id="screen-quiz">
+  <div class="quiz-topbar">
+    <button class="quit-btn" onclick="confirmQuit()">✕</button>
+    <div class="score-pill">⭐ <span id="live-score">0</span></div>
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timer-bar"></div>
+    </div>
+    <div class="timer-display" style="min-width:30px;margin:0">
+      <span id="timer-num">20</span>s
+    </div>
+  </div>
+
+  <div class="progress-row" id="progress-row"></div>
+
+  <div class="question-card">
+    <div class="q-meta">
+      <span class="q-num" id="q-num">SORU 1/10</span>
+      <span class="q-cat" id="q-cat">KATEGORİ</span>
+      <span class="q-diff" id="q-diff">⭐</span>
+    </div>
+    <div class="q-text" id="q-text">Soru yükleniyor...</div>
+  </div>
+
+  <div class="options-grid" id="options-grid"></div>
+
+  <div class="explanation-box" id="explanation-box"></div>
+
+  <button class="btn btn-neon" id="next-btn" onclick="nextQuestion()" style="display:none;max-width:420px">
+    Sonraki Soru →
+  </button>
+  <div class="spacer"></div>
+</div>
+
+<!-- =============================================
+     EKRAN 4: SONUÇ
+============================================= -->
+<div class="screen" id="screen-result">
+  <div class="result-hero" id="result-hero">
+    <span class="result-emoji" id="result-emoji">🏆</span>
+    <div class="result-title" id="result-title">Harika!</div>
+    <div class="result-sub" id="result-sub">Mükemmel bir performans</div>
+    <div class="score-display" id="result-score" style="color:var(--neon)">0</div>
+    <div class="score-max">/ <span id="result-max">100</span> puan</div>
+  </div>
+
+  <div class="result-stats">
+    <div class="rstat">
+      <div class="rstat-num" id="r-correct">0</div>
+      <div class="rstat-lbl">DOĞRU</div>
+    </div>
+    <div class="rstat">
+      <div class="rstat-num" id="r-wrong" style="color:var(--danger)">0</div>
+      <div class="rstat-lbl">YANLIŞ</div>
+    </div>
+    <div class="rstat">
+      <div class="rstat-num" id="r-time" style="color:var(--cyber)">0s</div>
+      <div class="rstat-lbl">ORT. SÜRE</div>
+    </div>
+  </div>
+
+  <div class="badge-earned" id="badge-earned">
+    <div class="badge-icon-big" id="badge-icon">🎖️</div>
+    <div class="badge-info">
+      <div class="badge-title" id="badge-title">Rozet</div>
+      <div class="badge-desc" id="badge-desc">Açıklama</div>
+    </div>
+  </div>
+
+  <div class="leaderboard" id="leaderboard-box">
+    <div class="lb-header">🏆 EN İYİ SKORLAR</div>
+    <div id="lb-rows"></div>
+  </div>
+
+  <div class="result-btns">
+    <button class="btn btn-solid" onclick="playAgain()">🔄 Tekrar Oyna</button>
+    <button class="btn btn-neon" onclick="changeAge()">🎯 Yaş Grubu Değiştir</button>
+    <button class="btn btn-ghost" onclick="showScreen('screen-welcome')">🏠 Ana Sayfa</button>
+  </div>
+</div>
+
+<!-- =============================================
+     İSİM GİRİŞ MODALI
+============================================= -->
+<div class="modal-overlay" id="name-modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🕵️ Adını Gir!</div>
+    <div class="modal-sub">Skor tablosuna kaydedilecek</div>
+    <input type="text" class="name-input" id="name-input"
+      placeholder="Adın..." maxlength="15"
+      autocomplete="off" autocorrect="off" autocapitalize="words" />
+    <button class="btn btn-solid" onclick="saveName()" style="max-width:100%">
+      ✅ Skoru Kaydet
+    </button>
+  </div>
+</div>
+
+<script>
+/* =============================================
+   SORU VERİTABANI
+   Her yaş grubu için 15+ soru var, her oyunda
+   10 tanesi rastgele seçilir.
+   
+   Yeni soru eklemek için aynı formatı kullan:
+   {
+     q: "Soru metni",
+     opts: ["A", "B", "C", "D"],
+     ans: 0,          // doğru şıkkın index'i (0=A, 1=B, 2=C, 3=D)
+     exp: "Açıklama", // cevap sonrası gösterilir
+     cat: "Kategori",
+     diff: 1          // 1=kolay, 2=orta, 3=zor
+   }
+============================================= */
+const QUESTIONS = {
+
+  /* =========== 5-8 YAŞ: Küçük Dedektif =========== */
+  "5-8": [
+    {
+      q: "Şifreni (parolani) başkasıyla paylaşmak doğru mu?",
+      opts: ["Evet, arkadaşımla paylaşabilirim", "Hayır, kimseyle paylaşmamalıyım", "Sadece öğretmenimle paylaşabilirim", "Aile ile paylaşabilirim"],
+      ans: 1, cat: "Güvenlik", diff: 1,
+      exp: "Şifreni kimseyle paylaşmamalısın! Şifre senin gizli anahtarındır. 🔑"
+    },
+    {
+      q: "İnternette tanımadığın biriyle konuşmak güvenli mi?",
+      opts: ["Evet çok eğlenceli", "Hayır, tehlikeli olabilir", "Sadece oyun içinde güvenli", "Bazen güvenlidir"],
+      ans: 1, cat: "Güvenlik", diff: 1,
+      exp: "İnternette herkes gerçek kimliğini sakleyabilir. Yabancılarla konuşmadan önce büyüklerine sor! 👨‍👩‍👧"
+    },
+    {
+      q: "Bilgisayarda bir virüs nedir?",
+      opts: ["Bilgisayarı hızlandıran program", "Bilgisayara zarar veren kötü program", "Oyun programı", "İnternet programı"],
+      ans: 1, cat: "Virüs", diff: 1,
+      exp: "Virüs, bilgisayarına zarar verebilen kötü bir programdır. Antivirüs programı bizi korur! 🛡️"
+    },
+    {
+      q: "Hangi şifre daha güvenlidir?",
+      opts: ["123456", "abcdef", "K@t1m!2024", "sifre"],
+      ans: 2, cat: "Şifre", diff: 1,
+      exp: "Büyük harf, küçük harf, rakam ve özel karakter içeren şifreler çok daha güvenlidir! 💪"
+    },
+    {
+      q: "Telefonda bir uygulama 'konum bilgine' erişmek istedi. Ne yapmalısın?",
+      opts: ["Hemen kabul et", "Büyüklerine sor", "Her zaman reddet", "Önemli değil"],
+      ans: 1, cat: "Gizlilik", diff: 1,
+      exp: "Bir uygulama izin istediğinde büyüklerinle konuşmak en güvenli seçenek! 🗺️"
+    },
+    {
+      q: "QR kod nedir?",
+      opts: ["Bir tür şeker", "Taranınca bilgiye götüren kare resim", "Bilgisayar oyunu", "Şarkı dinleme aracı"],
+      ans: 1, cat: "Teknoloji", diff: 1,
+      exp: "QR kodlar, telefonunla tarayınca seni bir web sitesine veya bilgiye götüren siyah-beyaz karelerdir! 📱"
+    },
+    {
+      q: "İnternette bir şey satın alırken ne dikkat etmelisin?",
+      opts: ["Hiçbir şey, hepsi güvenli", "Büyüklerin yardımı olmadan alışveriş yapma", "Ucuz olan her şeyi al", "Reklam çıktıysa güvenlidir"],
+      ans: 1, cat: "Güvenlik", diff: 1,
+      exp: "Online alışveriş yaparken mutlaka bir yetişkinin yardımını al! 🛒"
+    },
+    {
+      q: "Bilgisayarını kullandıktan sonra ne yapmalısın?",
+      opts: ["Açık bırak", "Hesabından çıkış yap", "Ekranı kapat yeter", "Fişini çek"],
+      ans: 1, cat: "Güvenlik", diff: 1,
+      exp: "Kullandıktan sonra hesabından çıkış yapmak bilgilerini korur! 🚪"
+    },
+    {
+      q: "Ekran başında kaç saat geçirmek sağlıklıdır?",
+      opts: ["Bütün gün", "Hiç", "Günde 1-2 saat", "10 saat"],
+      ans: 2, cat: "Dijital Sağlık", diff: 1,
+      exp: "Uzmanlar çocuklar için günlük 1-2 saat ekran süresini öneriyor. Ara ver, oyna, hareket et! 🏃"
+    },
+    {
+      q: "Sosyal medyada fotoğraflarını paylaşmak istiyorsun. Ne yapmalısın?",
+      opts: ["Herkese açık paylaş", "Büyüklerinle konuş", "Adresini de yaz", "Okul fotoğraflarını paylaş"],
+      ans: 1, cat: "Gizlilik", diff: 1,
+      exp: "Fotoğraf paylaşmadan önce mutlaka bir yetişkine sor ve gizlilik ayarlarını kontrol edin! 📸"
+    },
+    {
+      q: "İnternette birileri sana kötü davranıyorsa ne yapmalısın?",
+      opts: ["Sen de kötü davran", "Yok say ve devam et", "Büyüklerine veya öğretmenine söyle", "Hesabını sil"],
+      ans: 2, cat: "Güvenlik", diff: 1,
+      exp: "Siber zorbalık yaşıyorsan mutlaka güvendiğin bir yetişkine anlat! Sen yalnız değilsin. 🤝"
+    },
+    {
+      q: "Hangi bilgiyi internette paylaşmamalısın?",
+      opts: ["Sevdiğin renk", "Ev adresin ve telefon numaran", "Favori müzik türün", "Sevdiğin film"],
+      ans: 1, cat: "Gizlilik", diff: 1,
+      exp: "Adres, telefon, okul gibi kişisel bilgileri internette paylaşma. Bu bilgiler gizli kalmalı! 🏠"
+    },
+    {
+      q: "WiFi'ye bağlanmak ne demek?",
+      opts: ["Pilini şarj etmek", "İnternete kablosuz bağlanmak", "Telefonu kapatmak", "Ses açmak"],
+      ans: 1, cat: "Teknoloji", diff: 1,
+      exp: "WiFi, kablo olmadan internete bağlanmamızı sağlayan kablosuz teknolojidir! 📡"
+    },
+    {
+      q: "Bir web sitesi şifreni istedi. Bu site çok garip görünüyor. Ne yaparsın?",
+      opts: ["Şifremi yazarım", "Siteyi kapatır büyüklerime söylerim", "Arkadaşımın şifresini yazarım", "Rastgele bir şifre denerim"],
+      ans: 1, cat: "Phishing", diff: 2,
+      exp: "Şüpheli siteler kişisel bilgilerini çalmak için tasarlanmıştır. Hemen kapat ve büyüklerine söyle! 🚨"
+    },
+    {
+      q: "Antivirüs programı ne işe yarar?",
+      opts: ["Bilgisayarı hızlandırır", "Bilgisayarı zararlı programlardan korur", "İnternet hızını artırır", "Oyunları çalıştırır"],
+      ans: 1, cat: "Virüs", diff: 1,
+      exp: "Antivirüs programları bilgisayarını virüs ve zararlı yazılımlardan korur. Kalkan gibi! 🛡️"
+    },
+  ],
+
+  /* =========== 9-12 YAŞ: Genç Ajan =========== */
+  "9-12": [
+    {
+      q: "Phishing (oltalama) saldırısı ne demektir?",
+      opts: ["Balık avlamak", "Sahte e-posta/site ile bilgi çalmak", "Bilgisayarı hızlandırmak", "Online oyun oynamak"],
+      ans: 1, cat: "Phishing", diff: 2,
+      exp: "Phishing, saldırganların sahte e-posta veya web siteleriyle kullanıcı bilgilerini çalmaya çalışmasıdır. 🎣"
+    },
+    {
+      q: "HTTPS'deki 'S' harfi ne anlama gelir?",
+      opts: ["Hızlı (Speed)", "Güvenli (Secure)", "Basit (Simple)", "Paylaşımlı (Shared)"],
+      ans: 1, cat: "Web Güvenliği", diff: 2,
+      exp: "HTTPS'deki S, Secure (Güvenli) anlamına gelir. Bu sitelerde veriler şifrelenerek iletilir. 🔒"
+    },
+    {
+      q: "İki faktörlü doğrulama (2FA) nedir?",
+      opts: ["İki şifre kullanmak", "Şifre + telefona gelen kod ile giriş", "İki kişinin aynı hesabı kullanması", "İki farklı hesap açmak"],
+      ans: 1, cat: "Şifre", diff: 2,
+      exp: "2FA, şifrene ek olarak telefonuna gelen bir kod isteyerek güvenliği ikiye katlar! 📱"
+    },
+    {
+      q: "Hangi davranış seni siber tehlikelere karşı korur?",
+      opts: ["Her siteye aynı şifreyi kullanmak", "Güçlü ve farklı şifreler kullanmak", "Şifreni defterinde yazmak", "Çok kısa şifre seçmek"],
+      ans: 1, cat: "Şifre", diff: 2,
+      exp: "Her hesap için farklı, güçlü şifreler kullanmak en önemli güvenlik adımıdır! 🔑"
+    },
+    {
+      q: "Halka açık WiFi'de ne yapmamalısın?",
+      opts: ["Müzik dinlemek", "Banka işlemi veya şifre girmek", "Haber okumak", "Video izlemek"],
+      ans: 1, cat: "Ağ Güvenliği", diff: 2,
+      exp: "Halka açık WiFi'de veriler şifrelenmez, saldırganlar görebilir. Hassas işlemler için mobil veri kullan! 📶"
+    },
+    {
+      q: "Bir e-postada 'acil' diye şifreni isteyen bağlantı geldi. Bu ne tür bir saldırıdır?",
+      opts: ["Ransomware", "DDoS", "Phishing", "Trojan"],
+      ans: 2, cat: "Phishing", diff: 2,
+      exp: "Bu bir Phishing (oltalama) saldırısıdır. Gerçek şirketler e-posta ile şifre istemez! 🚫"
+    },
+    {
+      q: "Hangi şifre en güçlüdür?",
+      opts: ["dogumgunu1234", "T#9mK@pL!2z", "qwerty123", "sifre2024"],
+      ans: 1, cat: "Şifre", diff: 2,
+      exp: "Büyük-küçük harf, rakam ve özel karakterlerin karışımı en güçlü şifreyi oluşturur! 💪"
+    },
+    {
+      q: "Sosyal mühendislik ne demektir?",
+      opts: ["Sosyal medya tasarımı", "İnsanları manipüle ederek bilgi almak", "Sosyal ağ kurmak", "Mühendislik dalı"],
+      ans: 1, cat: "Sosyal Mühendislik", diff: 2,
+      exp: "Sosyal mühendislik, insanları kandırarak gizli bilgileri elde etme tekniğidir. 🎭"
+    },
+    {
+      q: "Malware nedir?",
+      opts: ["Kötü amaçlı yazılım", "E-posta programı", "Sosyal medya uygulaması", "Oyun motoru"],
+      ans: 0, cat: "Virüs", diff: 2,
+      exp: "Malware (Malicious Software), bilgisayara zarar vermek için tasarlanmış kötü amaçlı yazılımdır. 🦠"
+    },
+    {
+      q: "Çerez (Cookie) nedir?",
+      opts: ["Yenilebilir bisküvi", "Sitelerin tarayıcına kaydettiği küçük veri", "Antivirüs programı", "İnternet hız ölçer"],
+      ans: 1, cat: "Web Güvenliği", diff: 2,
+      exp: "Çerezler, web sitelerinin seni hatırlaması için tarayıcına kaydettiği küçük veri dosyalarıdır. 🍪"
+    },
+    {
+      q: "Güvenli bir web sitesinin URL'si nasıl başlar?",
+      opts: ["http://", "https://", "ftp://", "www://"],
+      ans: 1, cat: "Web Güvenliği", diff: 2,
+      exp: "https:// ile başlayan siteler şifreli (güvenli) bağlantı kullanır. Kilit simgesi de görürsün! 🔒"
+    },
+    {
+      q: "Firewall (Güvenlik Duvarı) ne işe yarar?",
+      opts: ["Bilgisayarı soğutur", "İzinsiz ağ erişimini engeller", "İnternet hızını artırır", "Dosyaları şifreler"],
+      ans: 1, cat: "Ağ Güvenliği", diff: 2,
+      exp: "Güvenlik duvarı, ağa gelen-giden trafiği denetleyerek yetkisiz erişimleri engeller. 🧱"
+    },
+    {
+      q: "Siber zorbalık (cyberbullying) ile karşılaşırsan ilk yapman gereken nedir?",
+      opts: ["Karşılık vermek", "Kanıt sakla ve güvendiğin birine söyle", "Hesabını sil", "Yok say"],
+      ans: 1, cat: "Güvenlik", diff: 2,
+      exp: "Ekran görüntüsü alarak kanıt sakla ve güvendiğin bir yetişkine veya öğretmenine anlat! 📢"
+    },
+    {
+      q: "VPN ne için kullanılır?",
+      opts: ["Oyun hızlandırmak", "İnternet bağlantısını gizlemek ve şifrelemek", "Virüs temizlemek", "Şifre oluşturmak"],
+      ans: 1, cat: "Ağ Güvenliği", diff: 2,
+      exp: "VPN (Sanal Özel Ağ), internet trafiğini şifreleyerek gizliliğini artırır. 🌐"
+    },
+    {
+      q: "Ekran süreni hangi araç takip etmene yardımcı olur?",
+      opts: ["Antivirüs", "Dijital Denge / Ekran Süresi uygulaması", "VPN", "Firewall"],
+      ans: 1, cat: "Dijital Sağlık", diff: 2,
+      exp: "Android'de Dijital Denge, iOS'te Ekran Süresi uygulamaları günlük kullanımını takip etmeni sağlar! ⏱️"
+    },
+  ],
+
+  /* =========== 13-15 YAŞ: Siber Kaşif =========== */
+  "13-15": [
+    {
+      q: "SQL Injection saldırısı ne amaçla kullanılır?",
+      opts: ["Web tasarımı yapmak", "Veritabanından yetkisiz veri çekmek", "E-posta göndermek", "Ağ hızını artırmak"],
+      ans: 1, cat: "Saldırı Türleri", diff: 3,
+      exp: "SQL Injection, veritabanı sorgularına kötü amaçlı kod ekleyerek yetkisiz veri elde etme saldırısıdır. 💉"
+    },
+    {
+      q: "Ransomware (fidye yazılımı) ne yapar?",
+      opts: ["İnterneti hızlandırır", "Dosyaları şifreleyip fidye ister", "Sosyal medya hesabı açar", "Şifre oluşturur"],
+      ans: 1, cat: "Malware", diff: 3,
+      exp: "Ransomware, dosyalarını şifreleyerek onları geri almak için para (fidye) talep eder. 💰"
+    },
+    {
+      q: "Man-in-the-Middle (MitM) saldırısında saldırgan ne yapar?",
+      opts: ["Fiziksel saldırı yapar", "İki taraf arasındaki iletişimi gizlice dinler", "Şifre kırar", "DDoS saldırısı yapar"],
+      ans: 1, cat: "Saldırı Türleri", diff: 3,
+      exp: "MitM saldırısında saldırgan, iki kişi arasındaki iletişimi fark ettirmeden dinler ve değiştirebilir. 👂"
+    },
+    {
+      q: "XSS (Cross-Site Scripting) nedir?",
+      opts: ["Bir programlama dili", "Web sitelerine kötü amaçlı script enjekte etmek", "Ağ tarama aracı", "Şifreleme yöntemi"],
+      ans: 1, cat: "Web Güvenliği", diff: 3,
+      exp: "XSS, saldırganın web sayfasına zararlı JavaScript kodu enjekte ederek kullanıcıları etkilemesidir. ⚡"
+    },
+    {
+      q: "Brute Force saldırısı nedir?",
+      opts: ["Fiziksel sunucu saldırısı", "Tüm olası şifre kombinasyonlarını deneme", "Sosyal mühendislik", "E-posta spam"],
+      ans: 1, cat: "Şifre", diff: 3,
+      exp: "Brute Force, doğru şifreyi bulmak için tüm olası kombinasyonları otomatik deneyen saldırıdır. 🔨"
+    },
+    {
+      q: "SHA-256 ne tür bir algoritmadır?",
+      opts: ["Sıkıştırma algoritması", "Kriptografik özet (hash) algoritması", "Şifreleme algoritması", "Sıralama algoritması"],
+      ans: 1, cat: "Kriptografi", diff: 3,
+      exp: "SHA-256, veriden sabit uzunlukta benzersiz bir özet (hash) üreten kriptografik algoritmadır. #️⃣"
+    },
+    {
+      q: "Zero-Day açığı ne demektir?",
+      opts: ["Sıfır gün süren saldırı", "Henüz yamasi yapılmamış güvenlik açığı", "Günlük güncelleme", "Yedekleme sistemi"],
+      ans: 1, cat: "Açıklar", diff: 3,
+      exp: "Zero-Day, yazılım geliştiricisinin henüz haberdar olmadığı ve yamalamadığı güvenlik açığıdır. 0️⃣"
+    },
+    {
+      q: "Penetrasyon testi (pen test) nedir?",
+      opts: ["Yazılım performans testi", "Sistemi izinli şekilde hackleyerek açık bulmak", "Ağ hız testi", "Uygulama yükleme"],
+      ans: 1, cat: "Etik Hacking", diff: 3,
+      exp: "Pen test, güvenlik uzmanlarının sisteme izinli olarak saldırarak zayıf noktaları bulmasıdır. 🎯"
+    },
+    {
+      q: "Hangi port HTTPS için varsayılan olarak kullanılır?",
+      opts: ["Port 80", "Port 443", "Port 22", "Port 3306"],
+      ans: 1, cat: "Ağ Güvenliği", diff: 3,
+      exp: "HTTPS protokolü varsayılan olarak 443 numaralı portu kullanır. HTTP ise 80'i kullanır. 🚪"
+    },
+    {
+      q: "Social Engineering saldırısında asıl hedef nedir?",
+      opts: ["Yazılım sistemleri", "İnsan psikolojisi ve güveni", "Ağ altyapısı", "Donanım bileşenleri"],
+      ans: 1, cat: "Sosyal Mühendislik", diff: 3,
+      exp: "Sosyal mühendislik, sistemleri değil insanları hedef alır. Güveni istismar ederek bilgi elde eder. 🧠"
+    },
+    {
+      q: "Tor ağı ne için kullanılır?",
+      opts: ["Oyun hızlandırmak", "Anonim internet kullanımı", "Dosya sıkıştırma", "Antivirüs"],
+      ans: 1, cat: "Gizlilik", diff: 3,
+      exp: "Tor ağı, trafiği birden fazla sunucudan geçirerek kullanıcının kimliğini gizler. 🧅"
+    },
+    {
+      q: "CTF (Capture The Flag) nedir?",
+      opts: ["Bayrak yarışı oyunu", "Siber güvenlik yarışması", "Programlama dili", "Ağ protokolü"],
+      ans: 1, cat: "Etik Hacking", diff: 3,
+      exp: "CTF, güvenlik becerilerini geliştirmek için yapılan yarışmalardır. Gizli 'bayraklar' bulunur. 🚩"
+    },
+    {
+      q: "Hangi araç ağ trafiğini analiz etmek için kullanılır?",
+      opts: ["Photoshop", "Wireshark", "VLC Player", "Notepad"],
+      ans: 1, cat: "Araçlar", diff: 3,
+      exp: "Wireshark, ağdaki paketleri yakalayan ve analiz eden popüler bir ağ analiz aracıdır. 🦈"
+    },
+    {
+      q: "AES şifrelemesi hangi kategoriye girer?",
+      opts: ["Asimetrik şifreleme", "Simetrik şifreleme", "Hash algoritması", "Dijital imza"],
+      ans: 1, cat: "Kriptografi", diff: 3,
+      exp: "AES (Advanced Encryption Standard), aynı anahtarı şifreleme ve çözme için kullanan simetrik algoritmadır. 🔐"
+    },
+    {
+      q: "OWASP Top 10 neyi listeler?",
+      opts: ["En popüler 10 programlama dili", "Web uygulamalarındaki en kritik 10 güvenlik riski", "En hızlı 10 antivirüs", "En güvenli 10 şifre"],
+      ans: 1, cat: "Web Güvenliği", diff: 3,
+      exp: "OWASP Top 10, web uygulamalarında en yaygın ve kritik 10 güvenlik açığını listeler. 📋"
+    },
+  ],
+
+  /* =========== 16-18 YAŞ: Pro Hacker =========== */
+  "16-18": [
+    {
+      q: "Buffer Overflow saldırısı nasıl çalışır?",
+      opts: ["Ağ bant genişliğini doldurur", "Bellek sınırını aşarak kodu manipüle eder", "Şifre veri tabanını siler", "DNS kayıtlarını değiştirir"],
+      ans: 1, cat: "Exploit", diff: 3,
+      exp: "Buffer Overflow, bir programa beklenenden fazla veri göndererek bellek sınırını aşıp kod akışını değiştirme saldırısıdır. 💾"
+    },
+    {
+      q: "RSA şifrelemesinin temeli hangi matematiksel probleme dayanır?",
+      opts: ["Asal sayıların çarpanlarına ayrılması", "Fibonacci dizisi", "Matris çarpımı", "İntegral hesabı"],
+      ans: 0, cat: "Kriptografi", diff: 3,
+      exp: "RSA, büyük sayıları asal çarpanlarına ayırmanın hesaplama açısından çok zor olmasına dayanır. 🔢"
+    },
+    {
+      q: "CVE numarası neyi temsil eder?",
+      opts: ["Virus veri tabanı ID'si", "Ortak Güvenlik Açığı ve Etkilenme kaydı", "Sertifika numarası", "Ağ protokol versiyonu"],
+      ans: 1, cat: "Açıklar", diff: 3,
+      exp: "CVE (Common Vulnerabilities and Exposures), güvenlik açıklarına verilen standart tanımlayıcı numaralardır. 📋"
+    },
+    {
+      q: "CSRF saldırısında saldırgan ne yapar?",
+      opts: ["Veritabanına erişir", "Kullanıcı adına yetkisiz istek gönderir", "Ağı dinler", "Şifre kırar"],
+      ans: 1, cat: "Web Güvenliği", diff: 3,
+      exp: "CSRF, oturum açık kullanıcının tarayıcısını kullanarak yetkisiz işlem yaptırmayı amaçlar. 🎭"
+    },
+    {
+      q: "Return-Oriented Programming (ROP) saldırısı ne amaçla kullanılır?",
+      opts: ["Web uygulama saldırısı", "Bellek korumalarını bypass etmek", "Ağ sniffing", "Sosyal mühendislik"],
+      ans: 1, cat: "Exploit", diff: 3,
+      exp: "ROP, mevcut kod parçacıklarını (gadget) zincirleyerek DEP/NX gibi bellek korumalarını aşar. ⛓️"
+    },
+    {
+      q: "Diffie-Hellman anahtar değişimi ne sağlar?",
+      opts: ["Dijital imza oluşturma", "Güvensiz kanalda güvenli anahtar paylaşımı", "Dosya şifreleme", "Hash üretme"],
+      ans: 1, cat: "Kriptografi", diff: 3,
+      exp: "DH, iki tarafın güvensiz bir kanal üzerinden gizli bir anahtar üzerinde anlaşmasını sağlar. 🤝"
+    },
+    {
+      q: "Privilege Escalation ne demektir?",
+      opts: ["Yetki düşürme", "Daha yüksek sistem yetkisi elde etme", "Kullanıcı silme", "Ağ konfigürasyonu"],
+      ans: 1, cat: "Exploit", diff: 3,
+      exp: "Privilege Escalation, düşük yetkili bir hesaptan yönetici/root yetkisi elde etme tekniğidir. 🪜"
+    },
+    {
+      q: "ASLR (Address Space Layout Randomization) ne sağlar?",
+      opts: ["Ağ şifrelemesi", "Bellek adreslerini rastgele konuma koyarak saldırıyı zorlaştırır", "Dosya izinleri yönetimi", "Ağ trafiği analizi"],
+      ans: 1, cat: "Savunma", diff: 3,
+      exp: "ASLR, her çalışmada bellek adreslerini rastgele değiştirerek saldırganın belirli adresleri hedeflemesini engeller. 🎲"
+    },
+    {
+      q: "Metasploit Framework hangi amaçla kullanılır?",
+      opts: ["Web geliştirme", "Penetrasyon testi ve exploit geliştirme", "Antivirüs yazılımı", "Ağ izleme"],
+      ans: 1, cat: "Araçlar", diff: 3,
+      exp: "Metasploit, penetrasyon testçilerinin exploit geliştirmek ve çalıştırmak için kullandığı kapsamlı bir çerçevedir. ⚔️"
+    },
+    {
+      q: "Steganografi nedir?",
+      opts: ["Veriyi şifreleme tekniği", "Veriyi başka veri içine gizleme", "Ağ protokolü", "Saldırı türü"],
+      ans: 1, cat: "Kriptografi", diff: 3,
+      exp: "Steganografi, mesajı resim/ses/video gibi medya dosyalarının içine gizleyerek iletme sanatıdır. 🖼️"
+    },
+    {
+      q: "DNS Poisoning (DNS Zehirlenmesi) ne yapar?",
+      opts: ["DNS sunucusunu çökertir", "DNS önbelleğini sahte kayıtlarla kirletir", "Ağ trafiğini şifreler", "IP adresini değiştirir"],
+      ans: 1, cat: "Ağ Saldırıları", diff: 3,
+      exp: "DNS Poisoning, sahte DNS kayıtlarıyla kullanıcıları gerçek site yerine sahte siteye yönlendirir. ☠️"
+    },
+    {
+      q: "ISO 27001 neyi kapsar?",
+      opts: ["Yazılım geliştirme standardı", "Bilgi güvenliği yönetim sistemi standardı", "Ağ donanımı standardı", "Veri sıkıştırma standardı"],
+      ans: 1, cat: "Standartlar", diff: 3,
+      exp: "ISO 27001, organizasyonların bilgi güvenliğini yönetmesi için uluslararası standarttır. 📜"
+    },
+    {
+      q: "Pass-the-Hash saldırısı nedir?",
+      opts: ["Hash algoritmalarını kırmak", "Şifre hash'ini direkt kimlik doğrulama için kullanmak", "Veritabanı saldırısı", "WiFi saldırısı"],
+      ans: 1, cat: "Saldırı Türleri", diff: 3,
+      exp: "Pass-the-Hash, şifreyi bilmeden ele geçirilen hash değeriyle kimlik doğrulaması yapma tekniğidir. 🔄"
+    },
+    {
+      q: "Threat Modeling (Tehdit Modelleme) sürecinde ne yapılır?",
+      opts: ["Virüs tespit edilir", "Sistem üzerindeki olası tehditler sistematik olarak analiz edilir", "Şifre kırılır", "Ağ kurulur"],
+      ans: 1, cat: "Güvenlik Mimarisi", diff: 3,
+      exp: "Threat Modeling, bir sistemdeki potansiyel güvenlik tehditlerini proaktif olarak belirleme ve öncekilendirme sürecidir. 🗺️"
+    },
+    {
+      q: "SIEM (Security Information and Event Management) ne işe yarar?",
+      opts: ["Şifre yönetimi", "Güvenlik olaylarını gerçek zamanlı toplayıp analiz eder", "Yazılım geliştirme", "Ağ konfigürasyonu"],
+      ans: 1, cat: "Savunma", diff: 3,
+      exp: "SIEM, farklı kaynaklardan güvenlik loglarını toplayarak tehditleri gerçek zamanlı analiz eder. 📊"
+    },
+  ],
+};
+
+/* =============================================
+   OYUN STATE
+============================================= */
+let state = {
+  ageGroup: null,
+  playerName: '',
+  questions: [],
+  currentQ: 0,
+  score: 0,
+  correctCount: 0,
+  wrongCount: 0,
+  totalTime: 0,
+  timerInterval: null,
+  timeLeft: 20,
+  answered: false,
+  questionStartTime: 0,
+};
+
+/* =============================================
+   SKOR TABLOSU (localStorage)
+============================================= */
+function getLeaderboard() {
+  try {
+    return JSON.parse(localStorage.getItem('siberay_lb') || '[]');
+  } catch { return []; }
+}
+function saveLeaderboard(lb) {
+  localStorage.setItem('siberay_lb', JSON.stringify(lb));
+}
+function addScore(name, score, ageGroup, correct, total) {
+  const lb = getLeaderboard();
+  lb.push({ name, score, ageGroup, correct, total, date: Date.now() });
+  lb.sort((a, b) => b.score - a.score);
+  lb.splice(10); // sadece top 10
+  saveLeaderboard(lb);
+}
+
+/* =============================================
+   EKRAN YÖNETİMİ
+============================================= */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  if (el) el.classList.add('active');
+}
+
+/* =============================================
+   YAŞ SEÇİMİ
+============================================= */
+function selectAge(card) {
+  document.querySelectorAll('.age-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  state.ageGroup = card.dataset.group;
+  const btn = document.getElementById('start-btn');
+  btn.style.opacity = '1';
+  btn.style.pointerEvents = 'auto';
+}
+
+/* =============================================
+   OYUN BAŞLAT
+============================================= */
+function startGame() {
+  if (!state.ageGroup) return;
+
+  // Soruları karıştır ve 10 seç
+  const pool = [...QUESTIONS[state.ageGroup]];
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  state.questions = pool.slice(0, 10);
+  state.currentQ = 0;
+  state.score = 0;
+  state.correctCount = 0;
+  state.wrongCount = 0;
+  state.totalTime = 0;
+  state.answered = false;
+
+  showScreen('screen-quiz');
+  buildProgressDots();
+  renderQuestion();
+}
+
+/* =============================================
+   İLERLEME NOKTALARI
+============================================= */
+function buildProgressDots() {
+  const row = document.getElementById('progress-row');
+  row.innerHTML = '';
+  for (let i = 0; i < state.questions.length; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (i === 0 ? ' active' : '');
+    dot.id = `pdot-${i}`;
+    row.appendChild(dot);
+  }
+}
+
+function updateProgressDot(idx, result) {
+  const dot = document.getElementById(`pdot-${idx}`);
+  if (!dot) return;
+  dot.classList.remove('active', 'done', 'wrong');
+  dot.classList.add(result === 'correct' ? 'done' : 'wrong');
+  const next = document.getElementById(`pdot-${idx + 1}`);
+  if (next) next.classList.add('active');
+}
+
+/* =============================================
+   SORU RENDER
+============================================= */
+function renderQuestion() {
+  const q = state.questions[state.currentQ];
+  state.answered = false;
+  state.questionStartTime = Date.now();
+
+  // Soru meta
+  document.getElementById('q-num').textContent = `SORU ${state.currentQ + 1}/${state.questions.length}`;
+  document.getElementById('q-cat').textContent = q.cat;
+  document.getElementById('q-diff').textContent = '⭐'.repeat(q.diff);
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('live-score').textContent = state.score;
+
+  // Şıklar
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  const letters = ['A', 'B', 'C', 'D'];
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.innerHTML = `<span class="option-letter">${letters[i]}</span>${opt}`;
+    btn.onclick = () => selectAnswer(i, btn);
+    grid.appendChild(btn);
+  });
+
+  // Açıklama gizle
+  const exp = document.getElementById('explanation-box');
+  exp.className = 'explanation-box';
+  exp.style.display = 'none';
+
+  // Sonraki buton gizle
+  document.getElementById('next-btn').style.display = 'none';
+
+  // Zamanlayıcı
+  startTimer();
+}
+
+/* =============================================
+   ZAMANLAYICI
+============================================= */
+function startTimer() {
+  clearInterval(state.timerInterval);
+  state.timeLeft = 20;
+  updateTimerUI(20, 20);
+
+  state.timerInterval = setInterval(() => {
+    state.timeLeft--;
+    updateTimerUI(state.timeLeft, 20);
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      if (!state.answered) timeOut();
+    }
+  }, 1000);
+}
+
+function updateTimerUI(left, total) {
+  const pct = (left / total) * 100;
+  const bar = document.getElementById('timer-bar');
+  const num = document.getElementById('timer-num');
+  bar.style.width = pct + '%';
+  num.textContent = left;
+  bar.className = 'timer-bar' + (left <= 5 ? ' danger' : left <= 10 ? ' warn' : '');
+}
+
+function timeOut() {
+  state.answered = true;
+  const q = state.questions[state.currentQ];
+  const elapsed = (Date.now() - state.questionStartTime) / 1000;
+  state.totalTime += elapsed;
+  state.wrongCount++;
+
+  // Doğru şıkkı göster
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.ans) btn.classList.add('correct');
+    else btn.classList.add('dimmed');
+  });
+
+  showExplanation(q, false);
+  updateProgressDot(state.currentQ, 'wrong');
+  document.getElementById('next-btn').style.display = 'flex';
+}
+
+/* =============================================
+   CEVAP SEÇİMİ
+============================================= */
+function selectAnswer(idx, btn) {
+  if (state.answered) return;
+  state.answered = true;
+  clearInterval(state.timerInterval);
+
+  const q = state.questions[state.currentQ];
+  const elapsed = (Date.now() - state.questionStartTime) / 1000;
+  state.totalTime += elapsed;
+
+  const btns = document.querySelectorAll('.option-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const isCorrect = idx === q.ans;
+
+  if (isCorrect) {
+    btn.classList.add('correct');
+    // Puan hesabı: kalan süre bonusu
+    const timeBonus = Math.ceil(state.timeLeft / 2);
+    const baseScore = q.diff * 10;
+    const earned = baseScore + timeBonus;
+    state.score += earned;
+    state.correctCount++;
+    updateProgressDot(state.currentQ, 'correct');
+
+    // Puan animasyonu
+    document.getElementById('live-score').textContent = state.score;
+  } else {
+    btn.classList.add('wrong');
+    btns[q.ans].classList.add('correct');
+    state.wrongCount++;
+    updateProgressDot(state.currentQ, 'wrong');
+  }
+
+  // Diğer şıkları soluklaştır
+  btns.forEach((b, i) => {
+    if (i !== idx && i !== q.ans) b.classList.add('dimmed');
+  });
+
+  showExplanation(q, isCorrect);
+  document.getElementById('next-btn').style.display = 'flex';
+}
+
+function showExplanation(q, isCorrect) {
+  const box = document.getElementById('explanation-box');
+  box.textContent = (isCorrect ? '✅ ' : '❌ ') + q.exp;
+  box.className = 'explanation-box ' + (isCorrect ? 'correct' : 'wrong');
+  box.style.display = 'block';
+}
+
+/* =============================================
+   SONRAKİ SORU
+============================================= */
+function nextQuestion() {
+  state.currentQ++;
+  if (state.currentQ >= state.questions.length) {
+    endGame();
+  } else {
+    renderQuestion();
+  }
+}
+
+/* =============================================
+   OYUN BİTİŞİ
+============================================= */
+function endGame() {
+  clearInterval(state.timerInterval);
+  const total = state.questions.length;
+  const pct = (state.correctCount / total) * 100;
+  const avgTime = (state.totalTime / total).toFixed(1);
+
+  // Sonuç hero
+  let emoji, title, sub, heroColor;
+  if (pct === 100) { emoji='🏆'; title='MÜKEMMEL!'; sub='Tam puan! Efsane bir dedektifsin!'; heroColor='rgba(255,215,0,0.1)'; }
+  else if (pct >= 80) { emoji='🥇'; title='HARİKA!'; sub='Çok iyi bir performans!'; heroColor='rgba(0,255,136,0.1)'; }
+  else if (pct >= 60) { emoji='🥈'; title='İYİ İŞ!'; sub='Daha fazla pratik yaparsan mükemmel olacaksın!'; heroColor='rgba(0,191,255,0.1)'; }
+  else if (pct >= 40) { emoji='🥉'; title='FENA DEĞİL'; sub='Biraz daha çalışman gerekiyor!'; heroColor='rgba(255,140,0,0.1)'; }
+  else { emoji='💪'; title='DEVAM ET!'; sub='Siber güvenlik öğrenmek zaman alır, pes etme!'; heroColor='rgba(123,47,255,0.1)'; }
+
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-sub').textContent = sub;
+  document.getElementById('result-score').textContent = state.score;
+  document.getElementById('result-max').textContent = state.questions.reduce((s, q) => s + q.diff * 10 + 10, 0);
+  document.getElementById('result-hero').style.background = heroColor;
+  document.getElementById('result-hero').style.border = '1px solid var(--border)';
+  document.getElementById('result-hero').style.borderRadius = '24px';
+
+  document.getElementById('r-correct').textContent = state.correctCount;
+  document.getElementById('r-wrong').textContent = state.wrongCount;
+  document.getElementById('r-time').textContent = avgTime + 's';
+
+  // Rozet
+  const badges = {
+    100: { icon: '🦸', title: 'Süper Kahraman', desc: 'Tüm soruları doğru cevapladın!' },
+    80:  { icon: '🔐', title: 'Siber Uzman', desc: 'Harika bir siber güvenlik bilgin var!' },
+    60:  { icon: '🕵️', title: 'Ajan', desc: 'Görev tamamlandı, gelişmeye devam!' },
+    40:  { icon: '🎓', title: 'Öğrenci', desc: 'Her gün biraz daha öğreniyorsun!' },
+    0:   { icon: '🌱', title: 'Acemi Dedektif', desc: 'Harika bir başlangıç! Devam et!' },
+  };
+  const badgeKey = pct === 100 ? 100 : pct >= 80 ? 80 : pct >= 60 ? 60 : pct >= 40 ? 40 : 0;
+  const badge = badges[badgeKey];
+  document.getElementById('badge-icon').textContent = badge.icon;
+  document.getElementById('badge-title').textContent = badge.title;
+  document.getElementById('badge-desc').textContent = badge.desc;
+
+  // Konfetti (80%+)
+  if (pct >= 80) startConfetti();
+
+  showScreen('screen-result');
+  openNameModal();
+}
+
+/* =============================================
+   İSİM MODAL
+============================================= */
+function openNameModal() {
+  document.getElementById('name-modal').classList.add('open');
+  setTimeout(() => document.getElementById('name-input').focus(), 400);
+}
+
+function saveName() {
+  const name = document.getElementById('name-input').value.trim() || 'Anonim';
+  state.playerName = name;
+  addScore(name, state.score, state.ageGroup, state.correctCount, state.questions.length);
+  document.getElementById('name-modal').classList.remove('open');
+  renderLeaderboard();
+}
+
+/* =============================================
+   SKOR TABLOSU RENDER
+============================================= */
+function renderLeaderboard() {
+  const lb = getLeaderboard();
+  const container = document.getElementById('lb-rows');
+  container.innerHTML = '';
+
+  if (lb.length === 0) {
+    container.innerHTML = '<div style="padding:16px;text-align:center;color:var(--dim);font-size:13px">Henüz skor yok. İlk sen ol! 🚀</div>';
+    return;
+  }
+
+  const rankClasses = ['gold', 'silver', 'bronze'];
+  const rankEmojis  = ['🥇', '🥈', '🥉'];
+
+  lb.slice(0, 7).forEach((entry, i) => {
+    const row = document.createElement('div');
+    const isCurrent = entry.name === state.playerName && entry.score === state.score;
+    row.className = 'lb-row' + (isCurrent ? ' current' : '');
+    row.innerHTML = `
+      <div class="lb-rank ${rankClasses[i] || ''}">${i < 3 ? rankEmojis[i] : (i + 1) + '.'}</div>
+      <div>
+        <div class="lb-name">${entry.name}</div>
+        <div class="lb-group">${entry.ageGroup} yaş · ${entry.correct}/${entry.total} doğru</div>
+      </div>
+      <div class="lb-score">${entry.score}</div>
+    `;
+    container.appendChild(row);
+  });
+}
+
+/* =============================================
+   ÇIKIŞ ONAYI
+============================================= */
+function confirmQuit() {
+  if (confirm('Oyundan çıkmak istediğine emin misin? İlerleme kaydedilmeyecek.')) {
+    clearInterval(state.timerInterval);
+    showScreen('screen-welcome');
+  }
+}
+
+/* =============================================
+   TEKRAR OYNA / YAŞ DEĞİŞTİR
+============================================= */
+function playAgain() {
+  stopConfetti();
+  startGame();
+}
+function changeAge() {
+  stopConfetti();
+  showScreen('screen-age');
+}
+
+/* =============================================
+   KONFETİ
+============================================= */
+let confettiAnim = null;
+const COLORS = ['#00FF88','#00BFFF','#FFD700','#FF003C','#7B2FFF','#FF6B35'];
+
+function startConfetti() {
+  const c = document.getElementById('confetti-canvas');
+  c.style.display = 'block';
+  c.width = window.innerWidth;
+  c.height = window.innerHeight;
+  const ctx = c.getContext('2d');
+
+  const pieces = Array.from({ length: 100 }, () => ({
+    x: Math.random() * c.width,
+    y: Math.random() * c.height - c.height,
+    w: 5 + Math.random() * 8,
+    h: 8 + Math.random() * 8,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    speed: 2 + Math.random() * 3,
+    angle: Math.random() * 360,
+    spin: (Math.random() - 0.5) * 5,
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, c.width, c.height);
+    pieces.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.angle * Math.PI / 180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = 0.9;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+      p.y += p.speed;
+      p.angle += p.spin;
+      if (p.y > c.height + 20) { p.y = -20; p.x = Math.random() * c.width; }
+    });
+    confettiAnim = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+function stopConfetti() {
+  if (confettiAnim) cancelAnimationFrame(confettiAnim);
+  document.getElementById('confetti-canvas').style.display = 'none';
+}
+
+/* =============================================
+   MATRIX ARKA PLAN
+============================================= */
+(function() {
+  const c = document.getElementById('matrix-bg');
+  const ctx = c.getContext('2d');
+  c.width = window.innerWidth;
+  c.height = window.innerHeight;
+  window.addEventListener('resize', () => { c.width = window.innerWidth; c.height = window.innerHeight; });
+  const chars = '01ABCDEF#$@><{}[]';
+  const fs = 13;
+  let cols = Math.floor(c.width / fs);
+  let dr = Array(cols).fill(1);
+  setInterval(() => {
+    ctx.fillStyle = 'rgba(10,14,26,0.05)';
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = '#00FF88';
+    ctx.font = fs + 'px Courier New';
+    dr.forEach((d, i) => {
+      ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fs, d * fs);
+      if (d * fs > c.height && Math.random() > 0.975) dr[i] = 0;
+      dr[i]++;
+    });
+  }, 60);
+})();
+
+/* Enter tuşu ile isim kaydet */
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') saveName();
+});
+</script>
+</body>
+</html>
